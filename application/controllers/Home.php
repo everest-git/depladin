@@ -1,96 +1,17 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+require_once 'vendor/autoload.php';
+require_once 'vendor/microsoft/microsoft-graph/src/Graph.php';
+use Microsoft\Graph\Connect\Constants;
+use Microsoft\Graph\Graph;
+
 class Home extends CI_Controller {
 
 	public function index()
 	{
 		if(!empty($this->session->userdata('Usuario'))){    
-            if ($this->session->userdata('Estatus') != 'Alta') {
-                $this->session->sess_destroy();
-                $this->session->set_userdata('id',null);
-                unset($_SESSION);
-                unset($_SESSION['state']);
-                $data = array(
-                    'mensaje' => '*Usuario no activo<br>*Contacte al Administrador'
-                );
-                $this->load->view('mensaje',$data);
-            } else {  
-                $this->Comun_model->Bitacora($this->session->userdata('IdBitacora'),$this->session->userdata('IDUsuario'),2);
-                $Pagina = $this->session->userdata('Pagina');
-                $data = [];
-                $this->load->view('header');
-                $existejs = true;
-                if ($Pagina != "") {
-                    switch ($Pagina) {
-                        case 'Comun/Entrada':
-                        
-                            $data['Destinatario'] = $this->Comun_model->listarcombo('Comun_Remitente', 'Nombre', 'NO', "");
-                            $data['Remitente'] = $this->Comun_model->listarcombo('Comun_Remitente', 'Nombre', 'NO', "");
-                            $data['Usuarios'] = $this->Usuario_model->getUsuariosAlta();
-                            $data['Prioridad'] = $this->Comun_model->listarcombo('UGC_Prioridad', 'IDPrioridad', 'NO', "");
-                            $data['Estatus'] = $this->Comun_model->listarcombo('UGC_Estatus', 'IDEstatus', 'NO', "");
-                            $data['Recepcion'] = $this->Comun_model->listarcombo('UGC_Recepcion', 'IDRecepcion', 'NO', "");
-                            $data['Conducente'] = $this->Comun_model->listarcombo('UGC_Conducente', 'IDConducente', 'NO', "");
-                            $existejs = true;
-                            break;
-                        case 'Comun/Seguimiento':
-                            $DProceso = array(
-                            "IDClave" => $this->session->userdata('Area')
-                            );
-                            $data['Procesos'] = $this->Comun_model->comboProcesos('UGC_Procesos', 'IDProceso', $DProceso);
-                            $data['Oficios'] = $this->Comun_model->listarcombo('VW_VOficiosS', 'Folio', 'NO', "");
-                            $data['Subprocesos'] = $this->Comun_model->listarcombo('UGC_Subprocesos', 'IDSubproceso', 'NO', "");
-                            $data['Expedientes'] = $this->Comun_model->listarcombos('EXP_Principal', 'Tipo', $DProceso);
-                            $existejs = true;
-                            break;
-                        case 'Comun/Salida':
-                            $DProceso = array(
-                            "IDClave" => $this->session->userdata('Area')
-                            );
-                            $data['Procesos'] = $this->Comun_model->comboProcesos('UGC_Procesos', 'IDProceso', $DProceso);
-                            $data['Destinatario'] = $this->Comun_model->listarcombo('Comun_Remitente', 'Nombre', 'NO', "");
-                            $data['Remitente'] = $this->Comun_model->listarcombo('Comun_Remitente', 'Nombre', 'NO', "");
-                            $data['Prioridad'] = $this->Comun_model->listarcombo('UGC_Prioridad', 'IDPrioridad', 'NO', "");
-                            $data['Estatus'] =   $this->Comun_model->listarcombo('UGC_Estatus', 'IDEstatus', 'NO', "");
-                            $data['Recepcion'] = $this->Comun_model->listarcombo('UGC_Recepcion', 'IDRecepcion', 'NO', "");
-                            $data['Oficios'] =   $this->Comun_model->listarcombo('VW_VUnica', 'IDRecibido', 'NO', "");
-                            $data['Subprocesos'] = $this->Comun_model->listarcombo('UGC_Subprocesos', 'IDSubproceso', 'NO', "");
-                            $data['Expedientes'] = $this->Comun_model->listarcombos('EXP_Principal', 'Tipo', $DProceso);
-                            $existejs = true;
-                            break;
-                        case 'Menu':
-                            $existejs = false;
-                            break;
-                        case 'Portafolio/cg':
-                            $data['contFP'] = $this->Usuario_model->getContFileP();
-                            break;
-                    }					
-					 //Revisar Funcion Administrador
-                    if ($this->session->userdata('Tipo') != 'Administrador') {
-                        $texto = explode("/", $Pagina);
-                        $consulta3 = $this->Usuario_model->getPerMod($texto[1], $this->session->userdata('IDUsuario'));
-                        if ($consulta3->IDModulo != '') {
-                            $this->load->view($Pagina, $data);
-                            if ($existejs) {
-                                $this->load->view($Pagina . 'Js');
-                            }
-                        } else {
-                            $this->load->view('menu');
-                        }
-                    } else {
-                        $this->load->view($Pagina, $data);
-                        if ($existejs) {
-                            $this->load->view($Pagina . 'Js');							
-                        }
-                    }
-                } else {
-                    $this->load->view('menu');                    
-                }
-                $dataarea['areas'] = $this->Usuario_model->getAreas();
-                $this->load->view('menuJs');
-                $this->load->view('footer',$dataarea);                   
-            }
+           
         }else{
             $this->login();
         } 
@@ -147,7 +68,7 @@ class Home extends CI_Controller {
                 $this->session->set_userdata('id',$jsonAccessTokenPayload['preferred_username']);
                 
                 $id = $this->session->userdata('id');
-                $usuario = $this->Usuario_model->validarUsuario($id);                
+                /*$usuario = $this->Usuario_model->validarUsuario($id);                
                 $variables = array(
                     'IDUsuario' => $usuario->IDUsuario,
                     'Usuario' => $usuario->Usuario,
@@ -160,9 +81,9 @@ class Home extends CI_Controller {
                     'Estatus' => $usuario->Estatus,
                     'AreaPrimaria' => $usuario->IDClave 
                 );
-                $this->session->set_userdata($variables);
+                $this->session->set_userdata($variables);*/
                // $this->calendar();   
-                $this->Comun_model->Bitacora('0',$usuario->IDUsuario,1);
+                /*$this->Comun_model->Bitacora('0',$usuario->IDUsuario,1);*/
                 
                 header('Location: '.base_url());
                 exit();
